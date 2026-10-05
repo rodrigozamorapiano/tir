@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calculadora VPN y TIR</title>
+<style>
+:root{--bg:#000;--card:#0d0d0f;--tx:#f4f4f5;--mut:#8a8a93;--bd:#1f1f24;--ac:#8b7cff;--gold:#8b7cff;--pb:#fff;--pt:#000;--ok:#00e08a;--okbg:#04281c;--no:#ff4d6a;--nobg:#2a0a12;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#000;--card:#0d0d0f;--tx:#f4f4f5;--mut:#8a8a93;--bd:#1f1f24;--ac:#8b7cff;--gold:#8b7cff;--pb:#fff;--pt:#000;--ok:#00e08a;--okbg:#04281c;--no:#ff4d6a;--nobg:#2a0a12}}
+:root[data-theme="dark"]{--bg:#000;--card:#0d0d0f;--tx:#f4f4f5;--mut:#8a8a93;--bd:#1f1f24;--ac:#8b7cff;--gold:#8b7cff;--pb:#fff;--pt:#000;--ok:#00e08a;--okbg:#04281c;--no:#ff4d6a;--nobg:#2a0a12}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.4}
+main{max-width:860px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:1.5rem;margin:0 0 4px}
+.sub{color:var(--mut);margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+label{display:block;font-size:.85rem;color:var(--mut);margin-bottom:4px}
+input{width:100%;padding:9px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font-size:1rem}
+h2{font-size:1rem;margin:0 0 10px}
+.row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.row span{min-width:78px;color:var(--mut);font-size:.9rem}
+button{padding:9px 14px;border-radius:8px;border:1px solid var(--bd);background:var(--card);color:var(--tx);cursor:pointer;font-size:.9rem}
+button.p{background:var(--pb);border-color:var(--pb);color:var(--pt);font-weight:700}
+.banner{background:radial-gradient(circle at 90% -20%,rgba(0,224,138,.28),transparent 55%),radial-gradient(circle at 0% 120%,rgba(139,124,255,.22),transparent 55%),#0a0a0c;color:#fff;border:1px solid #1f1f24;border-radius:16px;padding:20px 18px 16px;margin-bottom:16px}
+.banner h1{color:#fff}.banner p{margin:0;color:#8a8a93}.banner .g{color:#00e08a}
+.seg{display:flex;gap:6px;margin-bottom:12px}.seg button{flex:1}.seg button.on{background:var(--pb);color:var(--pt);border-color:var(--pb);font-weight:700}
+.hint{font-size:.8rem;color:var(--mut);margin-top:8px}
+.kpi{border-top:2px solid var(--gold)}.kpi b{font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.card,.kpi{border-radius:16px}.verdict{border:1px solid currentColor;box-shadow:0 0 32px -10px currentColor;border-radius:16px}
+input{background:#000}input:focus{outline:none;border-color:var(--ac)}
+.x{padding:6px 10px}
+.verdict{border-radius:12px;padding:16px;text-align:center;font-weight:700;font-size:1.4rem;margin-bottom:16px}
+.verdict small{display:block;font-weight:400;font-size:.9rem;margin-top:4px}
+.ok{background:var(--okbg);color:var(--ok)}.no{background:var(--nobg);color:var(--no)}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px}
+.kpi b{display:block;font-size:1.4rem;margin-top:2px}
+.kpi span{color:var(--mut);font-size:.85rem}
+.chart{overflow-x:auto}
+svg text{fill:var(--mut);font-size:11px}
+</style>
+</head>
+<body>
+<main>
+<div class="banner"><h1>Calculadora de <span class="g">VPN</span> y <span class="g">TIR</span></h1><p>Evalúa si tu inversión crea valor.</p></div>
+
+<div class="card">
+  <div class="grid">
+    <div><label>Inversión inicial ($)</label><input id="inv" type="number" value="100000" min="0"></div>
+    <div><label>Tasa de descuento anual (%)</label><input id="rate" type="number" value="10" step="0.1"></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Ingresos por periodo (años)</h2>
+  <div class="seg"><button id="m1" class="on" onclick="setMode('rec')">Recurrente (mismo ingreso)</button><button id="m2" onclick="setMode('man')">Manual por periodo</button></div>
+  <div id="rec">
+    <div class="grid">
+      <div><label>Ingreso por periodo ($)</label><input id="amt" type="number" value="40000"></div>
+      <div><label>Número de periodos</label><input id="n" type="number" value="5" min="1" max="60"></div>
+      <div><label>Crecimiento por periodo (%)</label><input id="g" type="number" value="0" step="0.5"></div>
+    </div>
+    <p class="hint">Con crecimiento 0% todos los periodos reciben el mismo ingreso.</p>
+  </div>
+  <div id="man" style="display:none"><div id="flows"></div><button onclick="addFlow()">+ Agregar periodo</button></div>
+</div>
+
+<button class="p" style="width:100%;margin-bottom:16px;padding:12px" onclick="calc()">Calcular</button>
+
+<div id="out" style="display:none">
+  <div id="verdict" class="verdict"></div>
+  <div class="kpis">
+    <div class="kpi"><span>VPN</span><b id="vpn"></b></div>
+    <div class="kpi"><span>TIR</span><b id="tir"></b></div>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><span>Recuperación simple</span><b id="pb"></b></div>
+    <div class="kpi"><span>Recuperación descontada</span><b id="dpb"></b></div>
+  </div>
+  <div class="card"><h2>Sensibilidad del VPN</h2><p class="sub" style="margin:0 0 10px;font-size:.85rem">Filas: cambio en los ingresos. Columnas: tasa de descuento.</p><div class="chart" id="sens"></div></div>
+  <div class="card"><h2>VPN según la tasa de descuento</h2><div class="chart" id="c1"></div></div>
+  <div class="card"><h2>Flujos de efectivo por periodo</h2><div class="chart" id="c2"></div></div>
+</div>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+const fmt=n=>(n<0?"-$":"$")+Math.abs(n).toLocaleString("es-MX",{maximumFractionDigits:2});
+let incomes=[30000,40000,50000,60000];
+
+function renderFlows(){
+  $("flows").innerHTML=incomes.map((v,i)=>
+    `<div class="row"><span>Año ${i+1}</span><input type="number" value="${Math.round(v*100)/100}" oninput="incomes[${i}]=parseFloat(this.value)||0"><button class="x" onclick="delFlow(${i})">✕</button></div>`).join("");
+}
+function addFlow(){incomes.push(0);renderFlows()}
+function delFlow(i){incomes.splice(i,1);renderFlows()}
+
+function npv(r,cf){return cf.reduce((s,c,t)=>s+c/Math.pow(1+r,t),0)}
+function irr(cf){
+  let lo=-0.99,hi=10,flo=npv(lo,cf),fhi=npv(hi,cf);
+  if(flo*fhi>0)return null;
+  for(let i=0;i<200;i++){
+    const m=(lo+hi)/2,fm=npv(m,cf);
+    if(flo*fm<=0){hi=m}else{lo=m;flo=fm}
+  }
+  return (lo+hi)/2;
+}
+
+let mode='rec';
+function setMode(m){
+  if(m==='man'&&mode==='rec')genRec();
+  mode=m;
+  $("rec").style.display=m==='rec'?'block':'none';
+  $("man").style.display=m==='man'?'block':'none';
+  $("m1").className=m==='rec'?'on':'';$("m2").className=m==='man'?'on':'';
+}
+function genRec(){
+  const a=parseFloat($("amt").value)||0,n=Math.max(1,Math.min(60,parseInt($("n").value)||1)),g=(parseFloat($("g").value)||0)/100;
+  incomes=Array.from({length:n},(_,i)=>a*Math.pow(1+g,i));
+  renderFlows();
+}
+function calc(){
+  if(mode==='rec')genRec();
+  const inv=parseFloat($("inv").value)||0, r=(parseFloat($("rate").value)||0)/100;
+  const cf=[-inv,...incomes];
+  const v=npv(r,cf), t=irr(cf);
+  $("out").style.display="block";
+  const ok=v>=0;
+  const vd=$("verdict");
+  vd.className="verdict "+(ok?"ok":"no");
+  vd.innerHTML=(ok?"✅ INVERTIR":"⛔ NO INVERTIR")+`<small>${ok?(v===0?"El VPN es cero: el proyecto rinde justo lo que exiges.":"El VPN es positivo: el proyecto genera valor."):"El VPN es negativo: el proyecto no alcanza la tasa de descuento."}</small>`;
+  $("vpn").textContent=fmt(v);$("vpn").style.color=ok?"var(--ok)":"var(--no)";
+  $("tir").textContent=t===null?"No existe":(t*100).toFixed(2)+"%";
+  chartNPV(cf,r,t);chartFlows(cf);
+  $("pb").textContent=payback(cf);
+  $("dpb").textContent=payback(cf.map((c,i)=>c/Math.pow(1+r,i)));
+  sensitivity(inv,r);
+}
+
+function payback(cf){
+  let acc=0;
+  for(let i=0;i<cf.length;i++){
+    const prev=acc;acc+=cf[i];
+    if(i>0&&acc>=0){const y=(i-1)+(-prev/cf[i]);return y.toFixed(2)+" años"}
+  }
+  return "No se recupera";
+}
+
+function sensitivity(inv,r){
+  const rates=[-0.04,-0.02,0,0.02,0.04].map(d=>Math.max(0,r+d));
+  const chg=[-0.2,-0.1,0,0.1,0.2];
+  let h=`<table style="width:100%;border-collapse:collapse;font-size:.85rem;min-width:420px"><tr><th></th>`+
+    rates.map(x=>`<th style="padding:6px;color:var(--mut)">${(x*100).toFixed(1)}%</th>`).join("")+`</tr>`;
+  chg.forEach(c=>{
+    h+=`<tr><th style="padding:6px;text-align:left;color:var(--mut)">${c>0?"+":""}${c*100}%</th>`;
+    rates.forEach(x=>{
+      const v=npv(x,[-inv,...incomes.map(m=>m*(1+c))]);
+      const base=c===0&&Math.abs(x-r)<1e-9;
+      h+=`<td style="padding:6px;text-align:center;border:1px solid var(--bd);background:${v>=0?"var(--okbg)":"var(--nobg)"};color:${v>=0?"var(--ok)":"var(--no)"};${base?"font-weight:700;outline:2px solid var(--ac)":""}">${Math.round(v).toLocaleString("es-MX")}</td>`;
+    });
+    h+=`</tr>`;
+  });
+  $("sens").innerHTML=h+`</table>`;
+}
+
+function chartNPV(cf,r,t){
+  const W=640,H=300,L=62,B=34,T=14,R=14;
+  const maxR=Math.max(0.3,Math.min(2,(t!==null?t*1.6:0),5),r*1.5);
+  const pts=[];for(let i=0;i<=60;i++){const x=maxR*i/60;pts.push([x,npv(x,cf)])}
+  const ys=pts.map(p=>p[1]);let mn=Math.min(...ys,0),mx=Math.max(...ys,0);if(mn===mx){mx=mn+1}
+  const sx=x=>L+x/maxR*(W-L-R), sy=y=>T+(mx-y)/(mx-mn)*(H-T-B);
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:420px">`;
+  for(let i=0;i<=4;i++){const y=mn+(mx-mn)*i/4;s+=`<line x1="${L}" x2="${W-R}" y1="${sy(y)}" y2="${sy(y)}" stroke="var(--bd)"/><text x="${L-6}" y="${sy(y)+4}" text-anchor="end">${Math.round(y).toLocaleString("es-MX")}</text>`}
+  for(let i=0;i<=5;i++){const x=maxR*i/5;s+=`<text x="${sx(x)}" y="${H-12}" text-anchor="middle">${(x*100).toFixed(0)}%</text>`}
+  s+=`<line x1="${L}" x2="${W-R}" y1="${sy(0)}" y2="${sy(0)}" stroke="var(--tx)" stroke-width="1.2"/>`;
+  s+=`<polyline fill="none" stroke="var(--ac)" stroke-width="2.5" points="${pts.map(p=>sx(p[0])+","+sy(p[1])).join(" ")}"/>`;
+  if(t!==null&&t>=0&&t<=maxR)s+=`<circle cx="${sx(t)}" cy="${sy(0)}" r="5" fill="var(--ok)"/><text x="${sx(t)}" y="${sy(0)-10}" text-anchor="middle" style="fill:var(--ok);font-weight:700">TIR ${(t*100).toFixed(1)}%</text>`;
+  const v=npv(r,cf),c=v>=0?"var(--ok)":"var(--no)";
+  s+=`<circle cx="${sx(r)}" cy="${sy(v)}" r="5" fill="${c}"/><text x="${Math.min(sx(r)+8,W-110)}" y="${sy(v)-8}" style="fill:${c};font-weight:700">Tu tasa ${(r*100).toFixed(1)}%</text>`;
+  s+=`</svg>`;$("c1").innerHTML=s;
+}
+
+function chartFlows(cf){
+  const W=640,H=260,L=62,B=30,T=14,R=14;
+  const mx=Math.max(...cf,0),mn=Math.min(...cf,0),rg=(mx-mn)||1;
+  const sy=y=>T+(mx-y)/rg*(H-T-B), bw=(W-L-R)/cf.length;
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:420px">`;
+  s+=`<line x1="${L}" x2="${W-R}" y1="${sy(0)}" y2="${sy(0)}" stroke="var(--tx)"/>`;
+  cf.forEach((c,i)=>{
+    const x=L+i*bw+bw*0.15,w=bw*0.7,y0=sy(0),y1=sy(c);
+    s+=`<rect x="${x}" y="${Math.min(y0,y1)}" width="${w}" height="${Math.abs(y1-y0)}" rx="3" fill="${c<0?"var(--no)":"var(--ok)"}"/>`;
+    s+=`<text x="${x+w/2}" y="${H-10}" text-anchor="middle">${i===0?"Inicio":"Año "+i}</text>`;
+    s+=`<text x="${x+w/2}" y="${c<0?y1+13:y1-5}" text-anchor="middle">${Math.round(c).toLocaleString("es-MX")}</text>`;
+  });
+  s+=`</svg>`;$("c2").innerHTML=s;
+}
+genRec();calc();
+</script>
+</body>
+</html>
