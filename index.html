@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Calculadora VPN y TIR</title>
+<title>Calculadora VPN, TIR, WACC y CAPM</title>
 <style>
 :root{--bg:#000;--card:#0d0d0f;--tx:#f4f4f5;--mut:#8a8a93;--bd:#1f1f24;--ac:#8b7cff;--gold:#8b7cff;--pb:#fff;--pt:#000;--ok:#00e08a;--okbg:#04281c;--no:#ff4d6a;--nobg:#2a0a12;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#000;--card:#0d0d0f;--tx:#f4f4f5;--mut:#8a8a93;--bd:#1f1f24;--ac:#8b7cff;--gold:#8b7cff;--pb:#fff;--pt:#000;--ok:#00e08a;--okbg:#04281c;--no:#ff4d6a;--nobg:#2a0a12}}
@@ -39,17 +39,50 @@ input{background:#000}input:focus{outline:none;border-color:var(--ac)}
 .kpi b{display:block;font-size:1.4rem;margin-top:2px}
 .kpi span{color:var(--mut);font-size:.85rem}
 .chart{overflow-x:auto}
+input[readonly]{opacity:.65}
+.cbl{display:flex;justify-content:space-between;gap:8px;font-size:.85rem;color:var(--mut)}.cbl b{color:var(--tx);font-variant-numeric:tabular-nums}
+.cbb{height:10px;background:var(--bd);border-radius:6px;overflow:hidden;margin:4px 0 12px}.cbb i{display:block;height:100%;border-radius:6px}
+.fx{font-size:.8rem;color:var(--mut);margin:10px 0 0}.fx b{color:var(--tx)}
+.mini{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-top:12px}
+.mini div{background:#0a0a0c;border:1px solid var(--bd);border-radius:12px;padding:10px;text-align:center}.mini span{display:block;font-size:.72rem;color:var(--mut)}.mini b{font-size:1.05rem;font-variant-numeric:tabular-nums}
 svg text{fill:var(--mut);font-size:11px}
 </style>
 </head>
 <body>
 <main>
-<div class="banner"><h1>Calculadora de <span class="g">VPN</span> y <span class="g">TIR</span></h1><p>Evalúa si tu inversión crea valor.</p></div>
+<div class="banner"><h1><span class="g">VPN</span>, <span class="g">TIR</span>, <span class="g">WACC</span> y <span class="g">CAPM</span></h1><p>Evalúa si tu inversión crea valor frente a su costo de capital.</p></div>
 
 <div class="card">
   <div class="grid">
     <div><label>Inversión inicial ($)</label><input id="inv" type="number" value="100000" min="0"></div>
-    <div><label>Tasa de descuento anual (%)</label><input id="rate" type="number" value="10" step="0.1"></div>
+    <div><label id="rlab">Tasa de descuento anual (%)</label><input id="rate" type="number" value="10" step="0.1"></div>
+  </div>
+  <div class="seg" style="margin:12px 0 0"><button id="r1" class="on" onclick="setRate('man')">Tasa manual</button><button id="r2" onclick="setRate('wacc')">WACC (con CAPM)</button></div>
+</div>
+
+<div id="waccbox" style="display:none">
+  <div class="card">
+    <h2>CAPM: costo del capital (Ke)</h2>
+    <div class="grid">
+      <div><label>Tasa libre de riesgo, Rf (%)</label><input id="rf" type="number" value="5" step="0.1" oninput="updCost()"></div>
+      <div><label>Rendimiento esperado del mercado, Rm (%)</label><input id="rm" type="number" value="10" step="0.1" oninput="updCost()"></div>
+      <div><label>Beta (β)</label><input id="beta" type="number" value="1.2" step="0.05" oninput="updCost()"></div>
+      <div><label>Prima de riesgo país o adicional (%)</label><input id="crp" type="number" value="0" step="0.1" oninput="updCost()"></div>
+    </div>
+    <p class="fx"><b>Ke = Rf + β × (Rm − Rf) + prima adicional</b></p>
+    <div class="mini"><div><span>Prima de mercado (Rm − Rf)</span><b id="cprima"></b></div><div><span>Costo del capital Ke</span><b id="cke" style="color:var(--ok)"></b></div></div>
+  </div>
+  <div class="card">
+    <h2>WACC: costo promedio ponderado de capital</h2>
+    <div class="grid">
+      <div><label>Deuda, D ($)</label><input id="de" type="number" value="40000" min="0" oninput="updCost()"></div>
+      <div><label>Capital propio, E ($)</label><input id="eq" type="number" value="60000" min="0" oninput="updCost()"></div>
+      <div><label>Costo de la deuda antes de impuestos, Kd (%)</label><input id="kd" type="number" value="8" step="0.1" oninput="updCost()"></div>
+      <div><label>Tasa de impuestos, t (%)</label><input id="tx" type="number" value="30" step="0.5" oninput="updCost()"></div>
+    </div>
+    <p class="fx"><b>WACC = E/V × Ke + D/V × Kd × (1 − t)</b> &nbsp;con V = D + E</p>
+    <div class="mini"><div><span>Peso deuda D/V</span><b id="cwd"></b></div><div><span>Peso capital E/V</span><b id="cwe"></b></div><div><span>Kd después de impuestos</span><b id="ckd"></b></div><div><span>WACC</span><b id="cwacc" style="color:var(--ok)"></b></div></div>
+    <p class="hint">Solo importa la proporción entre D y E; puedes capturar montos o porcentajes. El WACC se usa como tasa de descuento del VPN.</p>
   </div>
 </div>
 
@@ -74,6 +107,15 @@ svg text{fill:var(--mut);font-size:11px}
   <div class="kpis">
     <div class="kpi"><span>VPN</span><b id="vpn"></b></div>
     <div class="kpi"><span>TIR</span><b id="tir"></b></div>
+  </div>
+  <div id="cw" style="display:none">
+    <div class="kpis">
+      <div class="kpi"><span>Costo del capital Ke (CAPM)</span><b id="kke"></b></div>
+      <div class="kpi"><span>WACC</span><b id="kwacc"></b></div>
+      <div class="kpi"><span>TIR − WACC</span><b id="kspr"></b></div>
+      <div class="kpi"><span>Estructura D / E</span><b id="kest"></b></div>
+    </div>
+    <div class="card"><h2>TIR frente al costo de capital</h2><div id="cbars"></div></div>
   </div>
   <div class="kpis">
     <div class="kpi"><span>Recuperación simple</span><b id="pb"></b></div>
@@ -108,6 +150,37 @@ function irr(cf){
   return (lo+hi)/2;
 }
 
+let rmode='man',manualRate="10";
+const pc=v=>(v*100).toFixed(2)+"%";
+function costs(){
+  const g=id=>parseFloat($(id).value)||0;
+  const rf=g('rf')/100,rm=g('rm')/100,b=g('beta'),crp=g('crp')/100,ke=rf+b*(rm-rf)+crp;
+  const D=Math.max(0,g('de')),E=Math.max(0,g('eq')),V=D+E,wd=V?D/V:0,we=V?E/V:1;
+  const kd=g('kd')/100,t=g('tx')/100,kdat=kd*(1-t),wacc=we*ke+wd*kdat;
+  return{rf,rm,b,crp,ke,D,E,wd,we,kd,t,kdat,wacc};
+}
+function updCost(){
+  const c=costs();
+  $("cprima").textContent=pc(c.rm-c.rf);$("cke").textContent=pc(c.ke);
+  $("cwd").textContent=pc(c.wd);$("cwe").textContent=pc(c.we);$("ckd").textContent=pc(c.kdat);$("cwacc").textContent=pc(c.wacc);
+  if(rmode==='wacc')$("rate").value=(c.wacc*100).toFixed(2);
+}
+function setRate(m){
+  if(m==='wacc'&&rmode==='man')manualRate=$("rate").value;
+  if(m==='man'&&rmode==='wacc')$("rate").value=manualRate;
+  rmode=m;
+  $("r1").className=m==='man'?'on':'';$("r2").className=m==='wacc'?'on':'';
+  $("waccbox").style.display=m==='wacc'?'block':'none';
+  $("rate").readOnly=m==='wacc';
+  $("rlab").textContent=m==='wacc'?'Tasa de descuento = WACC (%)':'Tasa de descuento anual (%)';
+  updCost();
+}
+function chartCost(cs,t){
+  const items=[["Costo de la deuda (después de impuestos)",cs.kdat,"#ffb020"],["WACC",cs.wacc,"#38bdf8"],["Costo del capital Ke (CAPM)",cs.ke,"var(--ac)"],["TIR del proyecto",t,t!==null&&t>cs.wacc?"var(--ok)":"var(--no)"]];
+  const mx=Math.max(0.01,...items.map(i=>Math.max(0,i[1]||0)));
+  $("cbars").innerHTML=items.map(([n,v,c])=>`<div class="cbl"><span>${n}</span><b>${v===null?"No existe":pc(v)}</b></div><div class="cbb"><i style="width:${v===null?0:Math.max(0,v)/mx*100}%;background:${c}"></i></div>`).join("");
+}
+
 let mode='rec';
 function setMode(m){
   if(m==='man'&&mode==='rec')genRec();
@@ -123,14 +196,23 @@ function genRec(){
 }
 function calc(){
   if(mode==='rec')genRec();
-  const inv=parseFloat($("inv").value)||0, r=(parseFloat($("rate").value)||0)/100;
+  const cs=costs(),useW=rmode==='wacc',inv=parseFloat($("inv").value)||0, r=useW?cs.wacc:(parseFloat($("rate").value)||0)/100;
   const cf=[-inv,...incomes];
   const v=npv(r,cf), t=irr(cf);
   $("out").style.display="block";
   const ok=v>=0;
   const vd=$("verdict");
   vd.className="verdict "+(ok?"ok":"no");
-  vd.innerHTML=(ok?"✅ INVERTIR":"⛔ NO INVERTIR")+`<small>${ok?(v===0?"El VPN es cero: el proyecto rinde justo lo que exiges.":"El VPN es positivo: el proyecto genera valor."):"El VPN es negativo: el proyecto no alcanza la tasa de descuento."}</small>`;
+  const base=ok?(v===0?"El VPN es cero: el proyecto rinde justo lo que exiges.":"El VPN es positivo: el proyecto genera valor."):"El VPN es negativo: el proyecto no alcanza la tasa de descuento.";
+  const ext=useW?(t===null?"":(t>r?`<br>La TIR (${pc(t)}) supera al WACC (${pc(r)}) por ${((t-r)*100).toFixed(2)} pp.`:`<br>La TIR (${pc(t)}) no supera al WACC (${pc(r)}).`)):"";
+  vd.innerHTML=(ok?"✅ INVERTIR":"⛔ NO INVERTIR")+`<small>${base}${ext}</small>`;
+  $("cw").style.display=useW?"block":"none";
+  if(useW){
+    $("kke").textContent=pc(cs.ke);$("kwacc").textContent=pc(cs.wacc);
+    const sp=t===null?null:t-cs.wacc;$("kspr").textContent=sp===null?"—":(sp>=0?"+":"−")+Math.abs(sp*100).toFixed(2)+" pp";$("kspr").style.color=sp===null?"":sp>=0?"var(--ok)":"var(--no)";
+    $("kest").textContent=Math.round(cs.wd*100)+"% / "+Math.round(cs.we*100)+"%";
+    chartCost(cs,t);
+  }
   $("vpn").textContent=fmt(v);$("vpn").style.color=ok?"var(--ok)":"var(--no)";
   $("tir").textContent=t===null?"No existe":(t*100).toFixed(2)+"%";
   chartNPV(cf,r,t);chartFlows(cf);
@@ -178,7 +260,7 @@ function chartNPV(cf,r,t){
   s+=`<polyline fill="none" stroke="var(--ac)" stroke-width="2.5" points="${pts.map(p=>sx(p[0])+","+sy(p[1])).join(" ")}"/>`;
   if(t!==null&&t>=0&&t<=maxR)s+=`<circle cx="${sx(t)}" cy="${sy(0)}" r="5" fill="var(--ok)"/><text x="${sx(t)}" y="${sy(0)-10}" text-anchor="middle" style="fill:var(--ok);font-weight:700">TIR ${(t*100).toFixed(1)}%</text>`;
   const v=npv(r,cf),c=v>=0?"var(--ok)":"var(--no)";
-  s+=`<circle cx="${sx(r)}" cy="${sy(v)}" r="5" fill="${c}"/><text x="${Math.min(sx(r)+8,W-110)}" y="${sy(v)-8}" style="fill:${c};font-weight:700">Tu tasa ${(r*100).toFixed(1)}%</text>`;
+  s+=`<circle cx="${sx(r)}" cy="${sy(v)}" r="5" fill="${c}"/><text x="${Math.min(sx(r)+8,W-110)}" y="${sy(v)-8}" style="fill:${c};font-weight:700">${rmode==='wacc'?'WACC':'Tu tasa'} ${(r*100).toFixed(1)}%</text>`;
   s+=`</svg>`;$("c1").innerHTML=s;
 }
 
@@ -196,7 +278,7 @@ function chartFlows(cf){
   });
   s+=`</svg>`;$("c2").innerHTML=s;
 }
-genRec();calc();
+updCost();genRec();calc();
 </script>
 </body>
 </html>
